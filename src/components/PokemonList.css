@@ -1,0 +1,11 @@
+.card-wrapper {
+  border-radius: 8px;
+}
+
+.card-image {
+  padding: 20px;
+}
+
+.cart-meta {
+  text-transform: capitalize;
+}
