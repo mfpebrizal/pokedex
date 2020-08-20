@@ -10,7 +10,7 @@ const { Content } = Layout;
 
 const APPEND = 'APPEND';
 const FILTERED_LIST = 'FILTERED_LIST';
-const IMAGE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/';
+const IMAGE_URL = 'https://pokeres.bastionbot.org/images/pokemon';
 
 const listPokemonInitialState = {
   list:[],
@@ -41,17 +41,19 @@ function listPokemonReducer(state, action) {
 const generateImageUrl = (url) => {
   if (url) {
     const split = url.match(/^https:\/\/pokeapi.co\/api\/v2\/pokemon\/(\d+)/);
-    return `${IMAGE_URL}/${split[1]}.svg`;
+    return `${IMAGE_URL}/${split[1]}.png`;
   }
   return '';
 };
 
 function App() {  
+  const [loadingList, setLoadingList] = useState(listPokemonTypeinitialState);
   const [pokemonTypes, setPokemoTypes] = useState(listPokemonTypeinitialState);
   const [listPokemonState, listPokemonDispatch] = useReducer(listPokemonReducer, listPokemonInitialState);
 
   useEffect(() => {
-    fetch('https://pokeapi.co/api/v2/pokemon?limit=100')
+    setLoadingList(true);
+    fetch('https://pokeapi.co/api/v2/pokemon?limit=50')
     .then((response) => response.json())
     .then((response) => {
       listPokemonDispatch(
@@ -64,6 +66,9 @@ function App() {
           }
         }
       );
+    })
+    .finally(() => {
+      setLoadingList(false)
     });
   }, []);
 
@@ -74,6 +79,27 @@ function App() {
       setPokemoTypes(response.results)
     });
   }, []);
+
+  const handleInfiniteOnLoad = () => {
+    setLoadingList(true);
+    fetch(listPokemonState.next)
+    .then((response) => response.json())
+    .then((response) => {
+      listPokemonDispatch(
+        {
+          type: APPEND,
+          data: {
+            list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
+            next: response.next,
+            previous: response.previous
+          }
+        }
+      );
+    })
+    .finally(() => {
+      setLoadingList(false);
+    });
+  }
 
   return (
     <div className="App">
@@ -91,8 +117,8 @@ function App() {
                         <InfiniteScroll
                           initialLoad={false}
                           pageStart={0}
-                          loadMore={() => {}}
-                          hasMore={true}
+                          loadMore={!loadingList && handleInfiniteOnLoad}
+                          hasMore={!!listPokemonState.next}
                           useWindow={false}
                         >
                           <PokemonList pokemons={listPokemonState.list}/>
