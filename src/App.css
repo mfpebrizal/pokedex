@@ -15,3 +15,7 @@
   padding: 8px 24px;
   height: 100vh;
 }
+
+.capitalize {
+  text-transform: capitalize;
+}

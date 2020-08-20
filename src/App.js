@@ -1,23 +1,20 @@
-import React, { useReducer, useState, useEffect } from 'react';
+import React, { useReducer, useState, useEffect, useCallback } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import { v4 } from 'uuid';
-import { Layout, Row, Col } from 'antd';
+import { Layout, Row, Col, Select } from 'antd';
 
 import './App.css';
 import PokemonList from './components/PokemonList';
 
 const { Content } = Layout;
+const { Option } = Select;
 
 const APPEND = 'APPEND';
 const FILTERED_LIST = 'FILTERED_LIST';
+const RESET = 'RESET';
 const IMAGE_URL = 'https://pokeres.bastionbot.org/images/pokemon';
+const DEFAULT_LIST_URL = 'https://pokeapi.co/api/v2/pokemon?limit=50';
 
-const listPokemonInitialState = {
-  list:[],
-  next: null,
-  previous: null
-};
-const listPokemonTypeinitialState = [];
 
 function listPokemonReducer(state, action) {
   switch (action.type) {
@@ -27,9 +24,15 @@ function listPokemonReducer(state, action) {
         next: action.data.next,
         previous: action.data.previous,
       };
+    case RESET:
+      return {
+        list: action.data.list,
+        next: action.data.next,
+        previous: action.data.previous,
+      };
     case FILTERED_LIST:
       return {
-        list: action.list,
+        list: action.data.list,
         next: null,
         previous: null,
       };
@@ -47,42 +50,12 @@ const generateImageUrl = (url) => {
 };
 
 function App() {  
-  const [loadingList, setLoadingList] = useState(listPokemonTypeinitialState);
-  const [pokemonTypes, setPokemoTypes] = useState(listPokemonTypeinitialState);
-  const [listPokemonState, listPokemonDispatch] = useReducer(listPokemonReducer, listPokemonInitialState);
+  const [loadingList, setLoadingList] = useState(false);
+  const [pokemonTypes, setPokemoTypes] = useState([]);
+  const [listPokemonState, listPokemonDispatch] = useReducer(listPokemonReducer, { list:[], next: null, previous: null });
 
-  useEffect(() => {
-    setLoadingList(true);
-    fetch('https://pokeapi.co/api/v2/pokemon?limit=50')
-    .then((response) => response.json())
-    .then((response) => {
-      listPokemonDispatch(
-        {
-          type: APPEND,
-          data: {
-            list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
-            next: response.next,
-            previous: response.previous
-          }
-        }
-      );
-    })
-    .finally(() => {
-      setLoadingList(false)
-    });
-  }, []);
-
-  useEffect(() => {
-    fetch('https://pokeapi.co/api/v2/type')
-    .then((response) => response.json())
-    .then((response) => {
-      setPokemoTypes(response.results)
-    });
-  }, []);
-
-  const handleInfiniteOnLoad = () => {
-    setLoadingList(true);
-    fetch(listPokemonState.next)
+  const fetchList = useCallback((url = DEFAULT_LIST_URL) => {
+    fetch(url)
     .then((response) => response.json())
     .then((response) => {
       listPokemonDispatch(
@@ -99,7 +72,76 @@ function App() {
     .finally(() => {
       setLoadingList(false);
     });
+  }, [])
+
+  // TODO: REFACTOR
+  const fetchListReset = useCallback((url = DEFAULT_LIST_URL) => {
+    fetch(url)
+    .then((response) => response.json())
+    .then((response) => {
+      listPokemonDispatch(
+        {
+          type: RESET,
+          data: {
+            list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
+            next: response.next,
+            previous: response.previous
+          }
+        }
+      );
+    })
+    .finally(() => {
+      setLoadingList(false);
+    });
+  }, [])
+  
+  useEffect(() => {
+    fetchList()
+  }, [fetchList]);
+
+  useEffect(() => {
+    fetch('https://pokeapi.co/api/v2/type')
+    .then((response) => response.json())
+    .then((response) => {
+      const sortedTypes = response.results.sort((a, b) => {
+        a = a.name.toLowerCase();
+        b = b.name.toLowerCase();
+        return a < b ? -1 : b < a ? 1 : 0;
+      })
+      setPokemoTypes(sortedTypes)
+    });
+  }, []);
+
+  const handleInfiniteOnLoad = () => {
+    fetchList(listPokemonState.next);
   }
+
+  function onChange(value) {
+    console.log(value)
+    if(value) {
+      setLoadingList(true);
+      fetch(value)
+      .then((response) => response.json())
+      .then((response) => {
+        console.log(response.pokemon)
+        listPokemonDispatch(
+          {
+            type: FILTERED_LIST,
+            data: { 
+              list: response.pokemon.map(({ pokemon }) => ({...pokemon, id: v4() , image_url: generateImageUrl(pokemon.url)})),
+            }
+          }
+        );
+      })
+      .finally(() => {
+        setLoadingList(false)
+      });
+    } else {
+      fetchListReset();
+    }
+  }
+  
+  const typeOptions = pokemonTypes.map((detail, index) => <Option value={detail.url} key={index} className="capitalize">{detail.name}</Option>);
 
   return (
     <div className="App">
@@ -110,15 +152,28 @@ function App() {
               <Row gutter={[16, 16]}>
                   <div className="list">
                     <Col span={24}>
-                      <div>filter</div>
+                      <Select
+                        allowClear
+                        showSearch
+                        optionFilterProp="children"
+                        style={{ width: 200 }}
+                        placeholder="Select type"
+                        onChange={onChange}
+                        filterOption={(input, option) => {
+                          console.log(input, option)
+                          return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                        }}
+                      >
+                        {typeOptions}
+                      </Select>
                     </Col>  
                     <Col span={24}>
                       <div className="infinite-scroll-container">
                         <InfiniteScroll
                           initialLoad={false}
                           pageStart={0}
-                          loadMore={!loadingList && handleInfiniteOnLoad}
-                          hasMore={!!listPokemonState.next}
+                          loadMore={handleInfiniteOnLoad}
+                          hasMore={!loadingList && !!listPokemonState.next}
                           useWindow={false}
                         >
                           <PokemonList pokemons={listPokemonState.list}/>
