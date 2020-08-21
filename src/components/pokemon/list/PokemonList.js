@@ -13,9 +13,7 @@ const gridOptions = {
   xxl: 4,
 };
 
-
 const PokemonList = (props) => {
-
   const listItem = (pokemon) => (
     <List.Item>
       <Card

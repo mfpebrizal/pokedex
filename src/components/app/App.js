@@ -4,8 +4,8 @@ import { v4 } from 'uuid';
 import { Layout, Row, Col, Select } from 'antd';
 
 import './App.css';
-import PokemonList from './components/PokemonList';
-import PokemonDetail from './components/PokemonDetail';
+import PokemonList from '../pokemon/list/PokemonList';
+import PokemonDetail from '../pokemon/detail/PokemonDetail';
 
 const { Content } = Layout;
 const { Option } = Select;
@@ -59,58 +59,56 @@ function App() {
 
   const fetchList = useCallback((url = DEFAULT_LIST_URL) => {
     fetch(url)
-    .then((response) => response.json())
-    .then((response) => {
-      listPokemonDispatch(
-        {
-          type: APPEND,
-          data: {
-            list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
-            next: response.next,
-            previous: response.previous
+      .then((response) => response.json())
+      .then((response) => {
+        listPokemonDispatch(
+          {
+            type: APPEND,
+            data: {
+              list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
+              next: response.next,
+              previous: response.previous
+            }
           }
-        }
-      );
-    })
-    .finally(() => {
-      setLoadingList(false);
-    });
+        );
+      })  
+      .finally(() => {
+        setLoadingList(false);
+      });
   }, [])
 
   // TODO: REFACTOR
   const fetchListReset = useCallback((url = DEFAULT_LIST_URL) => {
     fetch(url)
-    .then((response) => response.json())
-    .then((response) => {
-      listPokemonDispatch(
-        {
-          type: RESET,
-          data: {
-            list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
-            next: response.next,
-            previous: response.previous
+      .then((response) => response.json())
+      .then((response) => {
+        listPokemonDispatch(
+          {
+            type: RESET,
+            data: {
+              list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
+              next: response.next,
+              previous: response.previous
+            }
           }
-        }
-      );
-    })
-    .finally(() => {
-      setLoadingList(false);
-    });
+        );
+      })
+      .finally(() => {
+        setLoadingList(false);
+      });
   }, [])
 
   const onCLickCard = useCallback((url) => {
     if(url){
       setLoadingDetail(true);
       fetch(url)
-      .then((response) => response.json())
-      .then((response) => {
-        setPokemonDetail(response);
-      })
-      .finally(() => {
-        setLoadingDetail(false);
-      });
-    } else {
-      console.log('invalid url', url);
+        .then((response) => response.json())
+        .then((response) => {
+          setPokemonDetail(response);
+        })
+        .finally(() => {
+          setLoadingDetail(false);
+        });
     }
   }, []);
   
@@ -136,7 +134,6 @@ function App() {
   }
 
   function onChange(value) {
-    console.log(value)
     if(value) {
       setLoadingList(true);
       fetch(value)

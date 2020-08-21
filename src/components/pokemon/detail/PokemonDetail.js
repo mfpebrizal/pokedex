@@ -1,7 +1,7 @@
 import React from 'react';
 import { Row, Space, Col, Typography, Tag, Progress } from 'antd';
 import './PokemonDetail.css';
-import { firstLetterCapitalize } from '../utils';
+import { firstLetterCapitalize, getIdTypeFromUrl } from '../../../utils';
 
 const { Text, Title } = Typography;
 const typeDetailColorbyId = {
@@ -33,14 +33,6 @@ const statusLabel = {
   'speed': 'Speed'
 }
 
-const getIdTypeFromUrl = (url) => {
-  if(url) {
-    const split = url.match(/^https:\/\/pokeapi.co\/api\/v2\/type\/(\d+)/);
-    return split[1];
-  }
-  return 0;
-}
- 
 const PokemonDetail = (props) => {
   let ImageLogo = 
   <Row className="logo-container">
