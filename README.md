@@ -1,3 +1,5 @@
+Open this [link](https://pokedex-zeta-beige.vercel.app/) to visit result page.
+
 ## Available Scripts
 
 In the project directory, you can run:
@@ -17,4 +19,4 @@ Runs unit test.
 
 ### `yarn build`
 
-Buils the app for production.
+Buils the app for production.   
