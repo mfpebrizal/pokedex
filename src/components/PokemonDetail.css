@@ -1,0 +1,14 @@
+.logo-container {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 50px;
+}
+
+.profile-detail {
+  text-align: left;
+}
+
+.indicator {
+  justify-content: space-between;
+}

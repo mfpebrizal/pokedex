@@ -5,6 +5,7 @@ import { Layout, Row, Col, Select } from 'antd';
 
 import './App.css';
 import PokemonList from './components/PokemonList';
+import PokemonDetail from './components/PokemonDetail';
 
 const { Content } = Layout;
 const { Option } = Select;
@@ -12,7 +13,7 @@ const { Option } = Select;
 const APPEND = 'APPEND';
 const FILTERED_LIST = 'FILTERED_LIST';
 const RESET = 'RESET';
-const IMAGE_URL = 'https://pokeres.bastionbot.org/images/pokemon';
+const IMAGE_URL = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon';
 const DEFAULT_LIST_URL = 'https://pokeapi.co/api/v2/pokemon?limit=50';
 
 
@@ -51,7 +52,9 @@ const generateImageUrl = (url) => {
 
 function App() {  
   const [loadingList, setLoadingList] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false)
   const [pokemonTypes, setPokemoTypes] = useState([]);
+  const [pokemonDetail, setPokemonDetail] = useState(null);
   const [listPokemonState, listPokemonDispatch] = useReducer(listPokemonReducer, { list:[], next: null, previous: null });
 
   const fetchList = useCallback((url = DEFAULT_LIST_URL) => {
@@ -94,6 +97,22 @@ function App() {
       setLoadingList(false);
     });
   }, [])
+
+  const onCLickCard = useCallback((url) => {
+    if(url){
+      setLoadingDetail(true);
+      fetch(url)
+      .then((response) => response.json())
+      .then((response) => {
+        setPokemonDetail(response);
+      })
+      .finally(() => {
+        setLoadingDetail(false);
+      });
+    } else {
+      console.log('invalid url', url);
+    }
+  }, []);
   
   useEffect(() => {
     fetchList()
@@ -148,7 +167,7 @@ function App() {
       <Layout>
         <Content>
           <Row gutter={[16, 16]}>
-            <Col  span={12}>
+            <Col span={12}>
               <Row gutter={[16, 16]}>
                   <div className="list">
                     <Col span={24}>
@@ -157,7 +176,7 @@ function App() {
                         showSearch
                         optionFilterProp="children"
                         style={{ width: 200 }}
-                        placeholder="Select type"
+                        placeholder="Select pokemon type"
                         onChange={onChange}
                         filterOption={(input, option) => {
                           console.log(input, option)
@@ -176,7 +195,7 @@ function App() {
                           hasMore={!loadingList && !!listPokemonState.next}
                           useWindow={false}
                         >
-                          <PokemonList pokemons={listPokemonState.list}/>
+                          <PokemonList pokemons={listPokemonState.list} onClick={(url) => onCLickCard(url)}/>
                         </InfiniteScroll>
                       </div>
                     </Col>
@@ -184,7 +203,13 @@ function App() {
               </Row>
             </Col>
             <Col span={12}>
-              <div>Detail</div>
+              <Row gutter={[16, 16]}>
+                <Col span={24}>
+                  <div className="detail">
+                    <PokemonDetail data={pokemonDetail}/>
+                  </div>
+                </Col>
+              </Row>
             </Col>
           </Row>
         </Content>  
