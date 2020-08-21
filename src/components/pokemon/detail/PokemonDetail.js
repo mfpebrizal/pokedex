@@ -1,9 +1,12 @@
 import React from 'react';
 import { Row, Space, Col, Typography, Tag, Progress } from 'antd';
-import './PokemonDetail.css';
+
 import { firstLetterCapitalize, getIdTypeFromUrl } from '../../../utils';
 
+import './PokemonDetail.css';
+
 const { Text, Title } = Typography;
+
 const typeDetailColorbyId = {
   '1': '#dcdcdc',
   '2': '#dc6900',
@@ -49,9 +52,9 @@ const PokemonDetail = (props) => {
       return (<Tag color={typeDetailColorbyId[`${typeId}`]} visible key={index}>{firstLetterCapitalize(type.name)}</Tag>)
     })
 
-    const statusIndicator = props.data.stats.map((status) => {
+    const statusIndicator = props.data.stats.map((status, index) => {
       return (
-        <Col span={21}>
+        <Col span={21} key={index}>
           <Progress
             strokeColor={{
               '0%': '#43cea2',
@@ -123,7 +126,6 @@ const PokemonDetail = (props) => {
   };
 
   return (
-    
     <div>
       { ImageLogo } 
       Click on card to see pokemon detail!
