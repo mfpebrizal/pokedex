@@ -13,19 +13,22 @@ const gridOptions = {
   xxl: 4,
 };
 
-const listItem = (pokemon) => (
-  <List.Item>
-    <Card
-      className="card-wrapper"
-      hoverable
-      cover={<img alt="example" className="card-image" src={pokemon.image_url} height="180"/>}
-    >
-      <Meta className="cart-meta" title={pokemon.name} />
-    </Card>
-  </List.Item>
-);
 
 const PokemonList = (props) => {
+
+  const listItem = (pokemon) => (
+    <List.Item>
+      <Card
+        onClick={() => props.onClick(pokemon.url)}
+        className="card-wrapper"
+        hoverable
+        cover={<img alt="pokemon" className="card-image" src={pokemon.image_url} height="180"/>}
+      >
+        <Meta className="cart-meta" title={pokemon.name} />
+      </Card>
+    </List.Item>
+  );
+
   return (
     <List
       grid={gridOptions}
