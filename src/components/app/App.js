@@ -9,7 +9,7 @@ import PokemonDetail from '../pokemon/detail/PokemonDetail';
 import './App.css';
 
 import { generateImageUrl } from '../../utils';
-import { APPEND, FILTERED_LIST, RESET, DEFAULT_LIST_URL } from '../../constant';
+import { APPEND, FILTERED_LIST, RESET, DEFAULT_LIST_URL, TYPE_LIST_URL } from '../../constant';
 
 const { Content } = Layout;
 const { Option } = Select;
@@ -35,11 +35,9 @@ function listPokemonReducer(state, action) {
         previous: null,
       };
     default:
-      throw new Error();
+      throw new Error('No action type found');
   }
 }
-
-
 
 function App() {  
   const [loadingList, setLoadingList] = useState(false);
@@ -49,43 +47,39 @@ function App() {
   const [pokemonDetail, setPokemonDetail] = useState(null);
   const [listPokemonState, listPokemonDispatch] = useReducer(listPokemonReducer, { list:[], next: null, previous: null });
 
-  const fetchList = useCallback((url = DEFAULT_LIST_URL) => {
-    fetch(url)
-      .then((response) => response.json())
-      .then((response) => {
-        listPokemonDispatch(
-          {
-            type: APPEND,
-            data: {
-              list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
-              next: response.next,
-              previous: response.previous
-            }
-          }
-        );
-      })  
-      .finally(() => {
-        setLoadingList(false);
-      });
-  }, []);
-
-  // TODO: REFACTOR
-  const fetchListReset = useCallback((url = DEFAULT_LIST_URL) => {
+  const fetchPokemonList = useCallback((url = DEFAULT_LIST_URL, actionType) => {
     setLoadingList(true);
     fetch(url)
       .then((response) => response.json())
       .then((response) => {
-        listPokemonDispatch(
-          {
-            type: RESET,
-            data: {
-              list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
-              next: response.next,
-              previous: response.previous
-            }
-          }
-        );
-      })
+        switch (actionType) {
+          case APPEND:
+          case RESET:
+            listPokemonDispatch(
+              {
+                type: actionType,
+                data: {
+                  list: response.results.map((detail) => ({...detail, id: v4() , image_url: generateImageUrl(detail.url)})),
+                  next: response.next,
+                  previous: response.previous
+                }
+              }
+            );
+            break;
+          case FILTERED_LIST:
+            listPokemonDispatch(
+              {
+                type: actionType,
+                data: { 
+                  list: response.pokemon.map(({ pokemon }) => ({...pokemon, id: v4() , image_url: generateImageUrl(pokemon.url)})),
+                }
+              }
+            );
+            break;
+          default:
+            throw new Error('No action type found');
+        }
+      })  
       .finally(() => {
         setLoadingList(false);
       });
@@ -93,7 +87,7 @@ function App() {
 
   const fetchTypes = useCallback(() => {
     setLoadingType(true);
-    fetch('https://pokeapi.co/api/v2/type')
+    fetch(TYPE_LIST_URL)
       .then((response) => response.json())
       .then((response) => {
         const sortedTypes = response.results.sort((a, b) => {
@@ -119,44 +113,28 @@ function App() {
         setLoadingDetail(false);
       });
   }, []);
+  
+  useEffect(() => {
+    fetchPokemonList(DEFAULT_LIST_URL, APPEND);
+    fetchTypes();
+  }, [fetchPokemonList, fetchTypes]);
 
   const onCLickCard = useCallback((url) => {
     if(url){
       fetchDetail(url)
     }
   }, [fetchDetail]);
-  
-  useEffect(() => {
-    fetchList();
-    fetchTypes();
-  }, [fetchList, fetchTypes]);
 
-  const handleInfiniteOnLoad = () => {
-    fetchList(listPokemonState.next);
+  const onChangeType = (url) => {
+    if(url) {
+      fetchPokemonList(url, FILTERED_LIST);
+    } else {
+      fetchPokemonList(DEFAULT_LIST_URL, RESET);
+    }
   }
 
-  function onChange(value) {
-    if(value) {
-      setLoadingList(true);
-      fetch(value)
-        .then((response) => response.json())
-        .then((response) => {
-          console.log(response.pokemon)
-          listPokemonDispatch(
-            {
-              type: FILTERED_LIST,
-              data: { 
-                list: response.pokemon.map(({ pokemon }) => ({...pokemon, id: v4() , image_url: generateImageUrl(pokemon.url)})),
-              }
-            }
-          );
-        })
-        .finally(() => {
-          setLoadingList(false)
-        });
-    } else {
-      fetchListReset();
-    }
+  const handleInfiniteOnLoad = () => {
+    fetchPokemonList(listPokemonState.next, APPEND);
   }
   
   const typeOptions = pokemonTypes.map((detail, index) => <Option value={detail.url} key={index} className="capitalize">{detail.name}</Option>);
@@ -176,9 +154,8 @@ function App() {
                         optionFilterProp="children"
                         style={{ width: 200 }}
                         placeholder="Select pokemon type"
-                        onChange={onChange}
+                        onChange={onChangeType}
                         filterOption={(input, option) => {
-                          console.log(input, option)
                           return option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                         }}
                       >
