@@ -126,7 +126,7 @@ const PokemonDetail = (props) => {
   };
 
   return (
-    <div>
+    <div className="empty-detail">
       { ImageLogo } 
       Click on card to see pokemon detail!
     </div>
